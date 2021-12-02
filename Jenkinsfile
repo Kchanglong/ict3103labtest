@@ -4,7 +4,7 @@ pipeline {
 		
 		stage('Test') {
 			steps {
-                sh 'phpunit --log-junit logs/unitreport.xml -c tests/phpunit.xml tests'
+                git branch:'main',url:'https://github.com/Kchanglong/ict3103labtest.git'
             }
 		}
 
@@ -31,9 +31,9 @@ pipeline {
 	}
 	post {
 		always{
-			junit testResults: 'logs/unitreport.xml'
-			recordIssues enabledForFailure: true, tools: [sonarQube()]
-			recordIssues(tools: [php()])
+			
+			recordIssues enabledForFailure: true, tools: sonarQube()
+		
 		}
 		success {
 			dependencyCheckPublisher pattern: 'dependency-check-report.xml'
