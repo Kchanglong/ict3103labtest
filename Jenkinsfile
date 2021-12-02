@@ -1,21 +1,34 @@
 pipeline {
-			agent any
-			stages {
-				stage('Checkout SCM') {
+	agent none
+	stages {
+		stage('Integration UI Test') {
+			parallel {
+				stage('Deploy') {
+					agent any
 					steps {
-						git 'https://github.com/Kchanglong/JenkinsDependencyCheckTest'
+						sh './jenkins/scripts/deploy.sh'
+						input message: 'Finished using the web site? (Click "Proceed" to continue)'
+						sh './jenkins/scripts/kill.sh'
 					}
 				}
-
-				stage('OWASP DependencyCheck') {
-					steps {
-						dependencyCheck additionalArguments: '--format HTML --format XML', odcInstallation: 'Default'
+				stage('Headless Browser Test') {
+					agent {
+						docker {
+							image 'maven:3-alpine' 
+							args '-v /root/.m2:/root/.m2' 
+						}
 					}
-				}
-			}	
-			post {
-				success {
-					dependencyCheckPublisher pattern: 'dependency-check-report.xml'
+					steps {
+						sh 'mvn -B -DskipTests clean package'
+						sh 'mvn test'
+					}
+					post {
+						always {
+							junit 'target/surefire-reports/*.xml'
+						}
+					}
 				}
 			}
 		}
+	}
+}
